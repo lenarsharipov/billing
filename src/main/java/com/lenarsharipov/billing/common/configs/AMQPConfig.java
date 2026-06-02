@@ -1,14 +1,14 @@
-package com.lenarsharipov.billing.subscription.configs;
+package com.lenarsharipov.billing.common.configs;
 
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import static com.lenarsharipov.billing.common.constants.CommonConstants.EXCHANGE_NAME;
+
 @Configuration
 public class AMQPConfig {
-
-    public static final String EXCHANGE_NAME = "subscription.events";
 
     @Bean
     public Exchange subscriptionEventsExchange() {

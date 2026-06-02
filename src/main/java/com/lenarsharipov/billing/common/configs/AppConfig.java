@@ -16,10 +16,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 import javax.sql.DataSource;
 
+import static com.lenarsharipov.billing.common.constants.CommonConstants.TEN_MINUTES;
+
 @Configuration
 @EnableScheduling
 @EnableRetry
-@EnableSchedulerLock(defaultLockAtMostFor = "10m")
+@EnableSchedulerLock(defaultLockAtMostFor = TEN_MINUTES)
 public class AppConfig {
 
     @Bean

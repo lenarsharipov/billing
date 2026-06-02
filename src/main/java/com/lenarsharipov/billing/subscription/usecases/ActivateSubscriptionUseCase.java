@@ -35,9 +35,7 @@ public class ActivateSubscriptionUseCase {
                 userId, Subscription.State.ACTIVATED
         );
         Tariff tariff = tariffRepository.findById(request.tariffId()).orElse(null);
-
         validator.validateForActivation(hasActiveSubscription, tariff, request.activationDate());
-
         Invoice invoice = domainService.createNewSubscription(userId, tariff, request.activationDate());
 
         try {

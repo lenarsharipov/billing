@@ -24,6 +24,8 @@ public class OutboxEvent extends BaseAuditEntity {
 
     private String aggregateId;
 
+    private String routingKey;
+
     private String payload;
 
     @Enumerated(EnumType.STRING)
@@ -42,7 +44,7 @@ public class OutboxEvent extends BaseAuditEntity {
 
     public enum AggregateType {
         INVOICE,
-        SUBSCRIPTION_DEACTIVATED
+        SUBSCRIPTION
     }
 
     @Override

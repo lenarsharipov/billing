@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface OutboxEventRepository
@@ -35,5 +36,10 @@ public interface OutboxEventRepository
     void updateStatusByAggregateId(
             @Param("aggregateId") String aggregateId,
             @Param("status") OutboxEvent.Status status
+    );
+
+    Optional<OutboxEvent> findByAggregateTypeAndAggregateId(
+            String aggregateType,
+            String aggregateId
     );
 }

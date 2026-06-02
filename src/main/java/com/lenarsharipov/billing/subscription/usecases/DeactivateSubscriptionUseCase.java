@@ -21,11 +21,8 @@ public class DeactivateSubscriptionUseCase {
     private final OutboxProcessor outboxProcessor;
 
     public void execute(Long userId, SubscriptionDeactivationRequest request) {
-        log.info(
-                "Старт сценария деактивации подписки для userId: {}, tariffId: {}",
-                userId,
-                request.tariffId()
-        );
+        log.info("Запуск деактивации подписки для userId: {}, tariffId: {}", userId, request.tariffId());
+
         Subscription subscription = subscriptionRepository.findByUserIdAndTariffIdAndState(
                 userId, request.tariffId(), Subscription.State.ACTIVATED
         ).orElse(null);
@@ -35,11 +32,13 @@ public class DeactivateSubscriptionUseCase {
         domainService.deactivateSubscription(subscription);
 
         try {
-            // Вытаскиваем последнее сохраненное событие деактивации из Outbox для мгновенного пуша
             outboxProcessor.publishImmediateDeactivation(subscription.getId());
         } catch (Exception e) {
-            log.error("RabbitMQ недоступен при деактивации подписки {}. Сработает фоновый планировщик. Ошибка: {}",
-                    subscription.getId(), e.getMessage());
+            log.error(
+                    "RabbitMQ недоступен при деактивации подписки {}. Сработает фоновый планировщик. Ошибка: {}",
+                    subscription.getId(),
+                    e.getMessage()
+            );
         }
     }
 }

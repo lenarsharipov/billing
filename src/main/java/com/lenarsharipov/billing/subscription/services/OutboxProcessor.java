@@ -14,18 +14,17 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.lenarsharipov.billing.common.constants.CommonConstants.*;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class OutboxProcessor {
 
-    private static final String EXCHANGE_NAME = "subscription.events";
-
     private final OutboxEventRepository outboxEventRepository;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
 
-    // Первичная мгновенная отправка из UseCase
     @Transactional
     public void publishImmediate(Invoice invoice) {
         String jsonPayload;
@@ -43,7 +42,7 @@ public class OutboxProcessor {
 
         rabbitTemplate.convertAndSend(
                 EXCHANGE_NAME,
-                "invoice.created",
+                ROUTING_INVOICE_CREATED,
                 jsonPayload
         );
         outboxEventRepository.updateStatusByAggregateId(
@@ -52,10 +51,27 @@ public class OutboxProcessor {
         );
     }
 
-    // Повторная отправка планировщиком: 5 попыток с экспоненциальным бэкоффом
+    @Transactional
+    public void publishImmediateDeactivation(Long subscriptionId) {
+        outboxEventRepository.findByAggregateTypeAndAggregateId(
+                        OutboxEvent.AggregateType.SUBSCRIPTION.name(),
+                        subscriptionId.toString()
+                )
+                .ifPresent(event -> {
+                    rabbitTemplate.convertAndSend(
+                            EXCHANGE_NAME,
+                            ROUTING_SUB_DEACTIVATED,
+                            event.getPayload()
+                    );
+                    event.setStatus(OutboxEvent.Status.SENT);
+                    outboxEventRepository.save(event);
+                });
+    }
+
+    // Повторная отправка планировщиком: N попыток с экспоненциальным бэкоффом
     @Transactional
     @Retryable(
-            retryFor = { Exception.class },
+            retryFor = {Exception.class},
             maxAttempts = 5,
             backoff = @Backoff(
                     delay = 2000,
@@ -64,12 +80,12 @@ public class OutboxProcessor {
     )
     public void processScheduledEvent(OutboxEvent event) {
         event.setAttempts(event.getAttempts() + 1);
+        String routingKey = event.getRoutingKey();
         rabbitTemplate.convertAndSend(
-                "subscription.events",
-                "invoice.created",
+                EXCHANGE_NAME,
+                routingKey,
                 event.getPayload()
         );
-
         event.setStatus(OutboxEvent.Status.SENT);
         outboxEventRepository.save(event);
     }
@@ -78,7 +94,7 @@ public class OutboxProcessor {
     @Transactional
     public void recover(Exception e, OutboxEvent event) {
         log.error(
-                "!!! Инвойс {} окончательно превысил лимит попыток. Перемещен в статус DB-DLQ !!!",
+                "Превышено число попыток брокера для события {}. Перемещено в DB-DLQ",
                 event.getAggregateId()
         );
         event.setStatus(OutboxEvent.Status.DLQ);

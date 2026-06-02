@@ -15,11 +15,11 @@ public interface SubscriptionRepository
 
     List<Subscription> findByState(Subscription.State state);
 
+    List<Subscription> findAllByUserIdAndState(Long userId, Subscription.State state);
+
     Optional<Subscription> findByUserIdAndTariffIdAndState(
             Long userId,
             Long tariffId,
             Subscription.State state
     );
-
-    List<Subscription> findAllByUserIdAndState(Long userId, Subscription.State state);
 }

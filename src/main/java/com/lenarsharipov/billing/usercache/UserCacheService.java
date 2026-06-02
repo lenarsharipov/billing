@@ -6,7 +6,6 @@ import com.lenarsharipov.billing.subscription.entities.Invoice;
 import com.lenarsharipov.billing.subscription.entities.Subscription;
 import com.lenarsharipov.billing.subscription.repositories.InvoiceRepository;
 import com.lenarsharipov.billing.subscription.repositories.SubscriptionRepository;
-import com.lenarsharipov.billing.usercache.dto.UserProfileResponse;
 import com.lenarsharipov.billing.usercache.repository.RedisProfileInvoiceCache;
 import com.lenarsharipov.billing.usercache.repository.RedisProfileSubscriptionCache;
 import lombok.RequiredArgsConstructor;
@@ -27,29 +26,51 @@ public class UserCacheService {
     private final SubscriptionRepository subscriptionRepository;
     private final InvoiceRepository invoiceRepository;
 
-    public UserProfileResponse getUserProfile(Long userId, Pageable pageable) {
+    public List<SubscriptionDto> getActiveSubscriptions(Long userId) {
         try {
             List<SubscriptionDto> activeSubs = redisSubCache.get(userId);
 
-            Page<InvoiceDto> invoicesPage = redisInvoiceCache.getPage(userId, pageable);
+            if (activeSubs.isEmpty()) {
+                activeSubs = subscriptionRepository.findAllByUserIdAndState(
+                                userId, Subscription.State.ACTIVATED
+                        ).stream()
+                        .map(Subscription::toDto)
+                        .toList();
 
-            log.info("Профиль пользователя {} успешно собран из NoSQL БД", userId);
-            return new UserProfileResponse(activeSubs, invoicesPage);
+                if (!activeSubs.isEmpty()) {
+                    redisSubCache.put(userId, activeSubs);
+                }
+            }
+            return activeSubs;
 
         } catch (Exception e) {
-            log.error("NoSQL БД (Redis) недоступна! Аварийное переключение на PostgreSQL для userId: {}", userId, e);
-            List<SubscriptionDto> dbSubs =
-                    subscriptionRepository.findAllByUserIdAndState(
-                            userId,
-                            Subscription.State.ACTIVATED
+            log.error("NoSQL БД (Redis) недоступна! Аварийный Fallback на PostgreSQL для подписок userId: {}", userId, e);
+            return subscriptionRepository.findAllByUserIdAndState(
+                            userId, Subscription.State.ACTIVATED
                     ).stream()
-                            .map(Subscription::toDto)
-                            .toList();
+                    .map(Subscription::toDto)
+                    .toList();
+        }
+    }
 
-            Page<Invoice> dbInvoicesPage = invoiceRepository.findAllByUserId(userId, pageable);
-            Page<InvoiceDto> dbInvoicesDtoPage = dbInvoicesPage.map(Invoice::toDto);
+    public Page<InvoiceDto> getUserInvoices(Long userId, Pageable pageable) {
+        try {
+            if (!redisInvoiceCache.exists(userId)) {
+                List<InvoiceDto> allInvoices =
+                        invoiceRepository.findAllByUserId(
+                                        userId, Pageable.unpaged()
+                                ).stream()
+                                .map(Invoice::toDto)
+                                .toList();
+                redisInvoiceCache.putAll(userId, allInvoices);
+            }
 
-            return new UserProfileResponse(dbSubs, dbInvoicesDtoPage);
+            return redisInvoiceCache.getPage(userId, pageable);
+
+        } catch (Exception e) {
+            log.error("NoSQL БД (Redis) недоступна! Аварийный Fallback на PostgreSQL для инвойсов userId: {}", userId, e);
+            return invoiceRepository.findAllByUserId(userId, pageable)
+                    .map(Invoice::toDto);
         }
     }
 }

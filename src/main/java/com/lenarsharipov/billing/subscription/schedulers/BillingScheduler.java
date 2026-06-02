@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.List;
 
+import static com.lenarsharipov.billing.common.constants.CommonConstants.*;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -24,9 +26,9 @@ public class BillingScheduler {
 
     @Scheduled(cron = "0 0 * * * *")
     @SchedulerLock(
-            name = "monthlyBillingLock",
-            lockAtMostFor = "45m",
-            lockAtLeastFor = "5m"
+            name = MONTHLY_BILLING_LOCK_NAME,
+            lockAtMostFor = FORTY_FIVE_MINUTES,
+            lockAtLeastFor = FIVE_MINUTES
     )
     public void runMonthlyBilling() {
         Instant now = Instant.now();

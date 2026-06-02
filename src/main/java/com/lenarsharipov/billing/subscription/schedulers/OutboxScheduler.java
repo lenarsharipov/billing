@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.List;
 
+import static com.lenarsharipov.billing.common.constants.CommonConstants.*;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -22,9 +24,9 @@ public class OutboxScheduler {
 
     @Scheduled(fixedDelay = 60000) // Запуск каждую минуту
     @SchedulerLock(
-            name = "outboxRetryLock",
-            lockAtMostFor = "10m",
-            lockAtLeastFor = "10s"
+            name = OUTBOX_RETRY_LOCK_NAME,
+            lockAtMostFor = TEN_MINUTES,
+            lockAtLeastFor = TEN_SECONDS
     )
     public void retryPublishing() {
         List<OutboxEvent> pendingEvents = outboxEventRepository.findReadyForRetry(

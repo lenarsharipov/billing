@@ -6,9 +6,9 @@ import java.time.Instant;
 public record InvoiceMessageDto(
         Long invoiceId,
         Long userId,
-        Instant issueDate,
+        Instant invoiceDate,
         String tariffName,
-        BigDecimal amount,
-        Instant subscriptionActivatedAt
+        BigDecimal tariffAmount,
+        Instant subscriptionActivationDate
 ) {
 }
