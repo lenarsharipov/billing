@@ -1,7 +1,8 @@
 package com.lenarsharipov.billing.subscription.entities;
 
-
 import com.lenarsharipov.billing.common.entities.BaseAuditEntity;
+import com.lenarsharipov.billing.subscription.dtos.SubscriptionDto;
+import com.lenarsharipov.billing.subscription.dtos.TariffDto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -49,6 +50,26 @@ public class Subscription extends BaseAuditEntity {
         DEACTIVATED
     }
 
+    public SubscriptionDto toDto() {
+        TariffDto tariffDto = null;
+        if (this.tariff != null) {
+            tariffDto = new TariffDto(
+                    this.tariff.getId(),
+                    this.tariff.getName(),
+                    this.tariff.getAmount()
+            );
+        }
+
+        return new SubscriptionDto(
+                this.id,
+                this.userId,
+                tariffDto,
+                this.state,
+                this.activationDate,
+                this.getCreatedAt()
+        );
+    }
+
     /**
      * Хелпер-метод для добавления инвойса.
      * Синхронизирует обе стороны связи в памяти.
@@ -57,17 +78,6 @@ public class Subscription extends BaseAuditEntity {
         if (invoice != null) {
             invoices.add(invoice);
             invoice.setSubscription(this);
-        }
-    }
-
-    /**
-     * Хелпер-метод для удаления инвойса.
-     * Синхронизирует обе стороны связи в памяти.
-     */
-    public void removeInvoice(Invoice invoice) {
-        if (invoice != null) {
-            invoices.remove(invoice);
-            invoice.setSubscription(null);
         }
     }
 }

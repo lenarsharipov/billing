@@ -29,21 +29,13 @@ public class SubscriptionController {
 
     @DeleteMapping("/active")
     public ResponseEntity<Void> deactivateSubscription(
-            @Valid SubscriptionDeactivationRequest request,
+            @RequestBody @Valid SubscriptionDeactivationRequest request,
             @PathVariable Long userId
     ) {
         subscriptionService.deactivateSubscription(userId, request);
         return ResponseEntity
                 .noContent()
                 .build();
-    }
-
-    @GetMapping("/active")
-    public ResponseEntity<String> getActiveSubscription(
-            @PathVariable Long userId
-    ) {
-        var resp = subscriptionService.getActiveSubscription(userId);
-        return ResponseEntity.ok(resp);
     }
 
 }

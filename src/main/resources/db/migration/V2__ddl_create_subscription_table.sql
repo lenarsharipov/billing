@@ -8,3 +8,7 @@ CREATE TABLE IF NOT EXISTS subscriptions
     created_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
     last_modified_at TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_active_user_subscription
+    ON subscriptions (user_id)
+    WHERE state = 'ACTIVATED';

@@ -19,10 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class OutboxProcessor {
 
+    private static final String EXCHANGE_NAME = "subscription.events";
+
     private final OutboxEventRepository outboxEventRepository;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
 
+    // Первичная мгновенная отправка из UseCase
     @Transactional
     public void publishImmediate(Invoice invoice) {
         String jsonPayload;
@@ -38,19 +41,34 @@ public class OutboxProcessor {
             throw new IllegalStateException(e);
         }
 
-        rabbitTemplate.convertAndSend("subscription.events", "invoice.created", jsonPayload);
-        outboxEventRepository.updateStatusByAggregateId(invoice.getId().toString(), OutboxEvent.Status.SENT);
+        rabbitTemplate.convertAndSend(
+                EXCHANGE_NAME,
+                "invoice.created",
+                jsonPayload
+        );
+        outboxEventRepository.updateStatusByAggregateId(
+                invoice.getId().toString(),
+                OutboxEvent.Status.SENT
+        );
     }
 
+    // Повторная отправка планировщиком: 5 попыток с экспоненциальным бэкоффом
     @Transactional
     @Retryable(
             retryFor = { Exception.class },
             maxAttempts = 5,
-            backoff = @Backoff(delay = 2000, multiplier = 3.0)
+            backoff = @Backoff(
+                    delay = 2000,
+                    multiplier = 3.0 // 2с, 6с, 18с, 54с...
+            )
     )
     public void processScheduledEvent(OutboxEvent event) {
         event.setAttempts(event.getAttempts() + 1);
-        rabbitTemplate.convertAndSend("subscription.events", "invoice.created", event.getPayload());
+        rabbitTemplate.convertAndSend(
+                "subscription.events",
+                "invoice.created",
+                event.getPayload()
+        );
 
         event.setStatus(OutboxEvent.Status.SENT);
         outboxEventRepository.save(event);
@@ -59,7 +77,10 @@ public class OutboxProcessor {
     @Recover
     @Transactional
     public void recover(Exception e, OutboxEvent event) {
-        log.error("!!! Инвойс {} окончательно превысил лимит попыток. Перемещен в статус DB-DLQ !!!", event.getAggregateId());
+        log.error(
+                "!!! Инвойс {} окончательно превысил лимит попыток. Перемещен в статус DB-DLQ !!!",
+                event.getAggregateId()
+        );
         event.setStatus(OutboxEvent.Status.DLQ);
         outboxEventRepository.save(event);
     }

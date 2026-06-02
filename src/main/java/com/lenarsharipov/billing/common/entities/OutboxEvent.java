@@ -41,7 +41,8 @@ public class OutboxEvent extends BaseAuditEntity {
     }
 
     public enum AggregateType {
-        INVOICE
+        INVOICE,
+        SUBSCRIPTION_DEACTIVATED
     }
 
     @Override

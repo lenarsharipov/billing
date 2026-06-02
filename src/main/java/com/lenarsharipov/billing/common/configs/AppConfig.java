@@ -31,7 +31,7 @@ public class AppConfig {
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Сериализует Instant как ISO-строку
         return mapper;
     }
 
@@ -40,7 +40,7 @@ public class AppConfig {
         return new JdbcTemplateLockProvider(
                 JdbcTemplateLockProvider.Configuration.builder()
                         .withJdbcTemplate(new JdbcTemplate(dataSource))
-                        .usingDbTime()
+                        .usingDbTime() // Берет время сервера БД, защищая от рассинхронизации часов на подах
                         .build()
         );
     }

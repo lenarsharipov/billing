@@ -20,7 +20,7 @@ public class OutboxScheduler {
     private final OutboxEventRepository outboxEventRepository;
     private final OutboxProcessor outboxProcessor;
 
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(fixedDelay = 60000) // Запуск каждую минуту
     @SchedulerLock(
             name = "outboxRetryLock",
             lockAtMostFor = "10m",

@@ -1,6 +1,7 @@
 package com.lenarsharipov.billing.subscription.entities;
 
 import com.lenarsharipov.billing.common.entities.BaseAuditEntity;
+import com.lenarsharipov.billing.subscription.dtos.InvoiceDto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,4 +27,13 @@ public class Invoice extends BaseAuditEntity {
     private Subscription subscription;
 
     private Instant invoiceDate;
+
+    public InvoiceDto toDto() {
+        return new InvoiceDto(
+                this.id,
+                this.userId,
+                this.invoiceDate,
+                this.getCreatedAt()
+        );
+    }
 }

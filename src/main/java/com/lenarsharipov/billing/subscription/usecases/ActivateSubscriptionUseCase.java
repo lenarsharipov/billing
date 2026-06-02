@@ -1,7 +1,9 @@
 package com.lenarsharipov.billing.subscription.usecases;
 
 import com.lenarsharipov.billing.common.ui.reqs.SubscriptionActivationRequest;
+import com.lenarsharipov.billing.subscription.entities.Invoice;
 import com.lenarsharipov.billing.subscription.entities.Subscription;
+import com.lenarsharipov.billing.subscription.entities.Tariff;
 import com.lenarsharipov.billing.subscription.repositories.SubscriptionRepository;
 import com.lenarsharipov.billing.subscription.repositories.TariffRepository;
 import com.lenarsharipov.billing.subscription.services.OutboxProcessor;
@@ -23,17 +25,29 @@ public class ActivateSubscriptionUseCase {
     private final OutboxProcessor outboxProcessor;
 
     public void execute(Long userId, SubscriptionActivationRequest request) {
-        var hasActiveSubscription =
-                subscriptionRepository.existsByUserIdAndState(userId, Subscription.State.ACTIVATED);
-        var tariff = tariffRepository.findById(request.tariffId()).orElse(null);
-        validator.validateForActivation(hasActiveSubscription, tariff);
-        var invoice = domainService.createNewSubscription(userId, tariff, request.activationDate());
+        log.info(
+                "Старт сценария активации подписки для userId: {}, tariffId: {}",
+                userId,
+                request.tariffId()
+        );
+
+        boolean hasActiveSubscription = subscriptionRepository.existsByUserIdAndState(
+                userId, Subscription.State.ACTIVATED
+        );
+        Tariff tariff = tariffRepository.findById(request.tariffId()).orElse(null);
+
+        validator.validateForActivation(hasActiveSubscription, tariff, request.activationDate());
+
+        Invoice invoice = domainService.createNewSubscription(userId, tariff, request.activationDate());
 
         try {
-//            outboxProcessor
+            outboxProcessor.publishImmediate(invoice);
         } catch (Exception e) {
-            log.error("RabbitMQ недоступен при первичной отправке инвойса {}. " +
-                    "Систему подстрахует Outbox Scheduler. Ошибка: {}", invoice.getId(), e.getMessage());
+            log.error(
+                    "RabbitMQ недоступен при первичной отправке инвойса {}. Сработает планировщик. Ошибка: {}",
+                    invoice.getId(),
+                    e.getMessage()
+            );
         }
     }
 }

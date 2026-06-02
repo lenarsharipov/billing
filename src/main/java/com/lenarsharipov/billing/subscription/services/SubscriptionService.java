@@ -3,6 +3,7 @@ package com.lenarsharipov.billing.subscription.services;
 import com.lenarsharipov.billing.common.ui.reqs.SubscriptionActivationRequest;
 import com.lenarsharipov.billing.common.ui.reqs.SubscriptionDeactivationRequest;
 import com.lenarsharipov.billing.subscription.usecases.ActivateSubscriptionUseCase;
+import com.lenarsharipov.billing.subscription.usecases.DeactivateSubscriptionUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 public class SubscriptionService {
 
     private final ActivateSubscriptionUseCase activateUseCase;
+    private final DeactivateSubscriptionUseCase deactivateUseCase;
 
     public void addSubscription(
             Long userId,
@@ -25,11 +27,7 @@ public class SubscriptionService {
             Long userId,
             SubscriptionDeactivationRequest request
     ) {
-
-    }
-
-    public String getActiveSubscription(Long userId) {
-        return "";
+        deactivateUseCase.execute(userId, request);
     }
 }
 
