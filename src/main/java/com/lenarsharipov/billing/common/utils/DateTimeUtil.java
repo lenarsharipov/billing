@@ -41,4 +41,8 @@ public class DateTimeUtil {
                 dt1.getMonth() == dt2.getMonth() &&
                 dt1.getDayOfMonth() == dt2.getDayOfMonth();
     }
+
+    public Instant getCurrentInstant() {
+        return Instant.now();
+    }
 }

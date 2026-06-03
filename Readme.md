@@ -57,10 +57,73 @@
 * Предусмотреть ситуацию недоступности NoSQL БД
 
 
-## Cтек
-* Java (версия на выбор)
-* Брокер сообщений (RabbitMQ/ActiveMQ - на выбор)
-* Реляционная БД (MySQL/PostgreSQL - на выбор)
-* Redis
-* Maven или Gradle - на выбор
+## Окружение
+* Java 21
+* Брокер сообщений (RabbitMQ 4)
+* Реляционная БД (PostgreSQL 17.10.3)
+* Redis (8.2)
+* Maven
 * JUnit 5 + Mockito
+
+
+# Запуск приложения:
+## Быстрый запуск через Docker (Рекомендуемый)
+
+### Предварительные требования
+* Установленный и запущенный **Docker Desktop** (или Docker Daemon)
+
+### Шаги для запуска (из корня проекта)
+1. Откройте терминал в корневой папке проекта (где лежат `Dockerfile` и `docker-compose.yml`).
+2. Выполните команду для сборки и запуска:
+   ```bash
+   docker-compose up --build
+   ```
+3. Приложение будет доступно по адресу: `http://localhost:8080`.
+4. Веб-панель управления RabbitMQ доступна по адресу: `http://localhost:15672` (Логин: `ufanet`, Пароль: `ufanet`).
+
+---
+## Запуск вручную (Локальная разработка)
+
+### Шаг 2.1: Системные зависимости
+Установите и настройте на вашем локальном компьютере следующее ПО:
+1. **Java 21** (Рекомендуется Eclipse Temurin или Amazon Corretto)
+2. **PostgreSQL 17** (Создайте базу данных с именем `ufanet`, пользователем `ufanet` и паролем `ufanet`)
+3. **Redis** (Должен быть запущен на стандартном порту `6379`)
+4. **RabbitMQ 4.x** (Должен быть запущен на порту `5672`. Создайте пользователя `ufanet` с паролем `ufanet` и выдайте ему права администратора).
+
+### Шаг 2.2: Сборка и запуск приложения
+1. Откройте терминал в корне проекта.
+2. Скомпилируйте проект и запустите JUnit 5 тесты:
+   ```bash
+   ./mvnw clean test
+   ```
+3. Соберите исполняемый JAR-файл:
+   ```bash
+   ./mvnw clean package -DskipTests
+   ```
+4. Запустите собранное приложение:
+   ```bash
+   java -jar target/*.jar
+   ```
+
+---
+
+## Примеры эндпоинтов для проверки в Postman
+
+### 1. Сервис управления подписками (PostgreSQL + Outbox)
+* **Активация подписки (Basic/PRO):**
+    * Метод: `POST`
+    * URL: `http://localhost:8080/api/v1/users/{userId}/subscriptions`
+    * Body (JSON): `{"tariffId": 2, "activationDate": "2026-06-03"}`
+* **Деактивация подписки:**
+    * Метод: `DELETE`
+    * URL: `http://localhost:8080/api/v1/users/{userId}/subscriptions/active`
+    * Body (JSON): `{"tariffId": 2}`
+
+### 2. Кэш-сервис получения информации (NoSQL Redis Read-Model)
+* **Получить список активных подписок:**
+    * Метод: `GET`
+    * URL: `http://localhost:8080/api/v1/cache/users/{userId}/subscriptions/active`
+* **Получить историю инвойсов с пагинацией:**
+    * Метод: `GET`
+    * URL: `http://localhost:8080/api/v1/cache/users/{userId}/invoices?page=0&size=10&sort=createdAt,desc`

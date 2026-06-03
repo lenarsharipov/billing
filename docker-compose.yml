@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:17.10-trixie
+    container_name: billing-postgres
+    environment:
+      POSTGRES_DB: ufanet
+      POSTGRES_USER: ufanet
+      POSTGRES_PASSWORD: ufanet
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ufanet -d ufanet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8.4.3-trixie
+    container_name: billing-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4.0-management
+    container_name: billing-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ufanet
+      RABBITMQ_DEFAULT_PASS: ufanet
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: billing-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ufanet
+      SPRING_DATASOURCE_USERNAME: ufanet
+      SPRING_DATASOURCE_PASSWORD: ufanet
+
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ufanet
+      SPRING_RABBITMQ_PASSWORD: ufanet
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:
+  rabbitdata:

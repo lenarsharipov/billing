@@ -1,11 +1,7 @@
 package com.lenarsharipov.billing.subscription.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lenarsharipov.billing.common.entities.OutboxEvent;
 import com.lenarsharipov.billing.common.repositories.OutboxEventRepository;
 import com.lenarsharipov.billing.common.utils.DateTimeUtil;
-import com.lenarsharipov.billing.subscription.dtos.InvoiceMessageDto;
-import com.lenarsharipov.billing.subscription.dtos.SubscriptionDeactivatedMessageDto;
 import com.lenarsharipov.billing.subscription.entities.Invoice;
 import com.lenarsharipov.billing.subscription.entities.Subscription;
 import com.lenarsharipov.billing.subscription.entities.Tariff;
@@ -15,12 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDate;
-
-import static com.lenarsharipov.billing.common.constants.CommonConstants.ROUTING_INVOICE_CREATED;
-import static com.lenarsharipov.billing.common.constants.CommonConstants.ROUTING_SUB_DEACTIVATED;
-import static com.lenarsharipov.billing.common.entities.OutboxEvent.AggregateType.INVOICE;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +20,6 @@ public class SubscriptionDomainService {
     private final SubscriptionRepository subscriptionRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final DateTimeUtil dateTimeUtil;
-    private final ObjectMapper objectMapper;
     private final SubscriptionBillingFactory factory;
 
     @Transactional
@@ -55,7 +45,7 @@ public class SubscriptionDomainService {
 
     @Transactional
     public void billSubscription(Subscription subscription) {
-        var now = Instant.now();
+        var now = dateTimeUtil.getCurrentInstant();
         Invoice invoice = factory.buildInvoice(subscription.getUserId(), now);
         subscription.addInvoice(invoice);
         subscriptionRepository.save(subscription);

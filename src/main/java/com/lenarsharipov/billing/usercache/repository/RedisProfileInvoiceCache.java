@@ -39,9 +39,8 @@ public class RedisProfileInvoiceCache {
         long start = pageable.getOffset();
         long end = start + pageable.getPageSize() - 1;
 
-        Set<String> jsonSet =
-                redisTemplate.opsForZSet()
-                        .reverseRange(key, start, end);
+        Set<String> jsonSet = redisTemplate.opsForZSet()
+                .reverseRange(key, start, end);
 
         Long totalCount = redisTemplate.opsForZSet().zCard(key);
         long total = totalCount != null ? totalCount : 0L;
